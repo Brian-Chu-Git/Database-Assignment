@@ -1,0 +1,443 @@
+WARNING COPY PASTING FROM/INTO CLEAR WAS WEIRD FOR ME. I HAVE COMPILED THE RESULTS AT THE BOTTOM AS WELL
+    >
+    > CREATE TABLE supplier (
+        s_suppkey               INT,
+    >     >     s_name                  STRING,
+    >   s_address               STRING,
+        s_nationkey             INT,
+        s_phone                 STRING,
+        s_acctbal               DOUBLE,
+        s_comment               STRING
+);
+
+
+CREATE TABLE partsupp (
+        ps_partkey      INT,
+        ps_suppkey      INT,
+        ps_availqty     INT,
+        ps_supplycost   DOUBLE,
+    >     >     >     >     > Added table supplier
+MyDB>     >     >     >     >     >     >     >         ps_comment      STRING
+);
+
+
+CREATE TABLE customer (
+        c_custkey       INT,
+        c_name          STRING,
+        c_address       STRING,
+    >   c_nationkey     INT,
+        c_phone         STRING,
+        c_acctbal       DOUBLE,
+        c_mktsegment    STRING,
+        c_comment       STRING
+);
+
+
+CREATE TABLE orders (
+        o_orderkey      INT,
+        o_custkey       INT,
+        o_orderstatus   STRING,
+        o_totalprice    DOUBLE,
+        o_orderdate     STRING,
+        o_orderpriority STRING,
+        o_clerk         STRING,
+        o_shippriority  INT,
+        o_comment       STRING
+);
+
+
+CREATE TABLE lineitem (
+        l_orderkey      INT,
+        l_partkey       INT,
+        l_suppkey       INT,
+Added table partsupp
+MyDB>     >     >     >     >     >     >     >     >     >     >     > Added table customer
+MyDB>     >     >     >     >     >     >     >     >     >     >     >     > Added table orders
+MyDB>     >     >     >     >     >     >       l_linenumber    INT,
+        l_quantity      INT,
+        l_extendedprice DOUBLE,
+        l_discount      DOUBLE,
+        l_tax           DOUBLE,
+        l_returnflag    STRING,
+        l_linestatus    STRING,
+        l_shipdate      STRING,
+    >     >     >       l_commitdate    STRI    > NG,
+        l_receiptdate   STRING,
+        l_shipinstruct  STRING,
+        l_shipmode      STRIN    > G,
+        l_comment       STRING
+);
+
+
+CREATE TABLE nation (
+        n_nationkey             I    > NT,
+        n_name                  STRING,
+        n_regionkey             INT,
+        n_comment               STRING
+);    >
+
+
+CREATE TABLE region (
+        r_regionk    > ey       INT,
+        r_name          STRING,
+        r_comment       STRING
+);
+
+    >     >     >     >     > Added table lineitem
+MyDB>     >     >     >     >     >     >     > Added table nation
+MyDB>     >     >     >     >     >     > Added table region
+MyDB>     >
+    > SELECT
+        n.n_name,
+        SUM(l.l_extendedprice * (1 - l.l_discount))
+FROM
+        customer AS c,
+    >     >     >     >     >         orders AS o,
+        lineitem AS l,
+        supplier AS s,
+        nation AS n,
+    >     >     >     >         region AS r
+    > WHERE
+        (c.c_custkey = o.o_custkey)
+        AND (l.l_orderkey = o.o_orderkey)
+        AND (l.l_suppkey = s.s_suppkey)
+            > AND (c.c_nationkey = s.s_nationkey)
+    >     >     >     >         AND (s.s_nationkey = n.n_nationkey)
+        AND (n.n_regionkey = r.r_regionkey)
+        AND (r.r_name = "region")
+        AND (o.o_orderdate > "date1" OR o.o_orderdate = "date1")    >
+        AND (NOT o.o_orderdate < "date2")
+GROUP BY
+    >     >     >     >     >         n.n_name;
+Start GTOP typecheck
+Selecting the following:
+        [n_n_name]
+        sum(* ([l_l_extendedprice], - (int[1], [l_l_discount])))
+From the following:
+        region AS r
+        nation AS n
+        supplier AS s
+        lineitem AS l
+        orders AS o
+        customer AS c
+Where the following are true:
+        == ([c_c_custkey], [o_o_custkey])
+        == ([l_l_orderkey], [o_o_orderkey])
+        == ([l_l_suppkey], [s_s_suppkey])
+        == ([c_c_nationkey], [s_s_nationkey])
+        == ([s_s_nationkey], [n_n_nationkey])
+        == ([n_n_regionkey], [r_r_regionkey])
+        == ([r_r_name], string[region])
+        || (> ([o_o_orderdate], string[date1]), == ([o_o_orderdate], string[date1]))
+        !(< ([o_o_orderdate], string[date2]))
+Group using:
+        [n_n_name]
+Success: Valid Query.
+MyDB> SELECT
+        n.n_name,
+        s.s_suppkey,
+        SUM(l.l_extendedprice)
+FROM
+        nation AS n,
+        supplier AS s,
+        lineitem AS l
+WHERE
+        (l.l_suppkey = s.s_suppkey)
+        AND (s.s_nationkey = n.n_nationkey)
+GROUP BY
+        n.n_name;    >     >     >     >     >     >     >     >     >     >     >     >
+Error: non-aggregate expression [s_s_suppkey] not in GROUP BY clause.
+Type checking error in SELECT statement.
+MyDB> SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount))
+FROM
+        lineitem AS l
+WHERE
+        (l.l_extendedprice * (1 - l.l_discount) > "a string");    >     >     >     >     >
+Start GTOP typecheck
+Error: Invalid operand types for >
+Type checking error in WHERE clause.
+MyDB> SELECT
+        SUM(l.l_returnflag + l.l_shipdate + l.l_commitdate)
+FROM
+        lineitem AS l;    >     >     >
+Error: Invalid operand types for sum
+Type checking error in SELECT statement.
+MyDB> SELECT
+        l.l_returnflag + l.l_shipdate + l.l_commitdate
+FROM
+        lineitem AS l
+WHERE
+        (l.l_shipdate > "a date");     >     >     >     >     >
+Start GTOP typecheck
+Selecting the following:
+        + ([l_l_returnflag], + ([l_l_shipdate], [l_l_commitdate]))
+From the following:
+        lineitem AS l
+Where the following are true:
+        > ([l_l_shipdate], string[a date])
+Group using:
+Success: Valid Query.
+MyDB> SELECT
+    >         n.n_name,
+    >         SUM(l.l_extendedprice * (1 - l.l_discount))
+FROM
+        customer AS c,
+        orders AS o,
+        lineitem AS l,
+    >     >     >     >     >         supplier AS s,
+    >         nation AS n,
+        region AS r
+    >     > WHERE
+    >         (c.c_custkey = o.o_custkey)
+        AND (l.l_orderkey = o.o_orderkey)
+        AND (l.l_suppkey = s.s_suppkey)
+        AND (c.c_nationkey = s.s_nationkey)
+        AND (s.s_nationkey = n.n_nationkey)
+        AND (n.n_regionkey = r.r_regionk    > ey)
+        AND (r.r_name = "region")
+        AND (l.l_tax + l.l_discount > "date2" OR o.o_orderdate = "date1")
+    >         AND (NOT o.o_orderdate < "date2")
+GROUP BY
+        n.n_name;    >     >     >     >     >     >     >     >
+Start GTOP typecheck
+Error: Invalid operand types for >
+Type checking error in WHERE clause.
+MyDB> SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount))
+FROM
+        customer AS c,
+        orders AS o,
+        lineitem AS l
+WHERE
+        (c.c_custkey = o.o_custkey)
+        AND (l.l_orderkey = o.k_orderkey);
+    >     >     >     >     >     >     >     > Error: Could not find attribute k_orderkey in table orders.
+Type checking error in WHERE clause.
+MyDB>
+    > SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount))
+FROM
+        customer AS c,
+        orders AS o,
+        lineitem AS l
+WHERE
+        (c.c_custkey = h.o_custkey)
+        AND (l.l_orderkey = o.o_orderkey);    >     >     >     >     >     >     >     >
+Error: Could not find table alias h.
+Type checking error in WHERE clause.
+MyDB> SELECT
+    >         SUM(l.l_extendedprice * (1 - l.l_discount))
+    > FROM
+        customer AS c,
+        orders AS o,
+        lineitem AS l
+    >     >     >     > WHERE
+        (c.c_custkey = o.o_custkey)
+        AND ("this is a string" + "this is another string" > 15.0 - "here is another")
+        AND (l.l_orderkey = o.o_orderkey);
+    >     >     > Start GTOP typecheck
+Error: Invalid operand types for -
+Type checking error in WHERE clause.
+MyDB>
+    > SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount))
+FROM
+        customers AS c,
+        orders AS o,
+        lineitem AS l
+WHERE
+        (c.c_custkey = o.o_custkey)
+        AND (l.l_orderkey = o.o_orderkey);    >     >     >     >     >     >     >     >
+Error: Table customers does not exist.
+Could not find table.
+MyDB> SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount))
+    >     > FROM
+    >         customer AS c,
+    >         orders AS o,
+    >         lineitem AS l
+    > WHERE
+    >         (c.c_custkey = o.o_custkey)
+        AND (l.l_orderkey = o.o_orderkey)
+        AND (1200 + l.l_quantity / (300.0 + 34) = 33);    >     >
+Selecting the following:
+        sum(* ([l_l_extendedprice], - (int[1], [l_l_discount])))
+From the following:
+        lineitem AS l
+        orders AS o
+        customer AS c
+Where the following are true:
+        == ([c_c_custkey], [o_o_custkey])
+        == ([l_l_orderkey], [o_o_orderkey])
+        == (+ (int[1200], / ([l_l_quantity], + (double[300.000000], int[34]))), int[33])
+Group using:
+Success: Valid Query.
+MyDB> SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount))
+FROM
+        customer AS c,
+        orders AS o,
+        lineitem AS l
+WHERE
+        (c.c_custkey = o.o_custkey)
+        AND ("this is a string" + "this is another string" > "here is another")
+        AND (l.l_orderkey = o.o_orderkey);    >     >     >     >     >     >     >     >     >
+Start GTOP typecheck
+Selecting the following:
+        sum(* ([l_l_extendedprice], - (int[1], [l_l_discount])))
+From the following:
+        lineitem AS l
+        orders AS o
+        customer AS c
+Where the following are true:
+        == ([c_c_custkey], [o_o_custkey])
+        > (+ (string[this is a string], string[this is another string]), string[here is another])
+        == ([l_l_orderkey], [o_o_orderkey])
+Group using:
+Success: Valid Query.
+MyDB> SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount)),
+        SUM(c.l_extendedprice * 1.01)
+FROM
+        customer AS c,
+        orders AS o,
+        lineitem AS l
+WHERE
+        (c.c_custkey = o.o_custkey)
+        AND (l.l_orderkey = o.o_    > orderkey);    >     >     >     >     >     >     >     >
+Error: Could not find attribute l_extendedprice in table customer.
+Type checking error in SELECT statement.
+MyDB> SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount))
+    >     > FROM
+    >         customer AS c,
+        orders AS o,
+        lineitem AS l
+    >     >     > WHERE
+    >         (c.c_custkey = o.o_custkey)
+    >   AND ("1204" + "this is a string" = l.l_returnflag)
+    >   AND (l.l_tax + l.l_discount + l.l_extendedprice > 3.27)
+    >         AND (l.l_orderkey = o.o_orderkey);
+Start GTOP typecheck
+Selecting the following:
+        sum(* ([l_l_extendedprice], - (int[1], [l_l_discount])))
+From the following:
+        lineitem AS l
+        orders AS o
+        customer AS c
+Where the following are true:
+        == ([c_c_custkey], [o_o_custkey])
+        == (+ (string[1204], string[this is a string]), [l_l_returnflag])
+        > (+ ([l_l_tax], + ([l_l_discount], [l_l_extendedprice])), double[3.270000])
+        == ([l_l_orderkey], [o_o_orderkey])
+Group using:
+Success: Valid Query.
+MyDB> SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount))
+FROM
+        customer AS c,
+        orders AS o,
+        lineitem AS l
+WHERE
+        (c.c_custkey = o.o_custkey)
+        AND (l.l_tax + l.l_discount + l.l_extendedprice > 3.27 OR
+                l.l_d    > iscount + l.l_extendedprice > "327")
+        AND (l.l_orderkey = o.o_orderkey);    >     >     >     >     >     >     >     >     >
+Start GTOP typecheck
+Start GTOP typecheck
+Error: Invalid operand types for >
+Type checking error in WHERE clause.
+MyDB> SELECT
+        SUM(l.l_extendedprice * (1 - l.l_discount)),
+        SUM(1 - l.l_discount)
+FROM
+        customer AS c,
+        orders AS o,
+    >     >     >     >     >         lineitem AS l
+WHERE
+        (c.c_custkey = o.o_cus    > tkey)
+    >     >     >       AND (l.l_tax + l.l_discount + l.l_extendedprice > 3.27 OR
+                "here is a string" > "327")
+    >     >         AND (l.l_orderkey = o.o_orderkey);
+Start GTOP typecheck
+Start GTOP typecheck
+Selecting the following:
+        sum(* ([l_l_extendedprice], - (int[1], [l_l_discount])))
+        sum(- (int[1], [l_l_discount]))
+From the following:
+        lineitem AS l
+        orders AS o
+        customer AS c
+Where the following are true:
+        == ([c_c_custkey], [o_o_custkey])
+        || (> (+ ([l_l_tax], + ([l_l_discount], [l_l_extendedprice])), double[3.270000]), > (string[here is a string], string[327]))
+        == ([l_l_orderkey], [o_o_orderkey])
+Group using:
+Success: Valid Query.
+MyDB> SELECT
+        SUM(12 + 13.4 + 19),
+        SUM(l.l_extendedprice)
+FROM
+        lineitem AS l;    >     >     >     >
+Selecting the following:
+        sum(+ (int[12], + (double[13.400000], int[19])))
+        sum([l_l_extendedprice])
+From the following:
+        lineitem AS l
+Where the following are true:
+        bool[true]
+Group using:
+Success: Valid Query.
+
+
+
+
+
+
+I also removed a testing print statement from ExprTree, if you see "Start GTOP typecheck", ignore it
+RESULTS FROM 1-17 TEST CASES
+1.
+Success: Valid Query.
+2.
+Error: non-aggregate expression [s_s_suppkey] not in GROUP BY clause.
+Type checking error in SELECT statement.
+3.
+Error: Invalid operand types for >
+Type checking error in WHERE clause.
+4.
+Error: Invalid operand types for sum
+Type checking error in SELECT statement.
+5.
+Success: Valid Query.
+6.
+Error: Invalid operand types for >
+Type checking error in WHERE clause.
+7.
+Error: Could not find attribute k_orderkey in table orders.
+Type checking error in WHERE clause.
+8.
+Error: Could not find table alias h.
+Type checking error in WHERE clause.
+9.
+Error: Invalid operand types for -
+Type checking error in WHERE clause.
+10.
+Error: Table customers does not exist.
+Could not find table.
+11.
+Success: Valid Query.
+12.
+Success: Valid Query.
+13.
+Error: Could not find attribute l_extendedprice in table customer.
+Type checking error in SELECT statement.
+14.
+Success: Valid Query.
+15.
+Error: Invalid operand types for >
+Type checking error in WHERE clause.
+16.
+Success: Valid Query.
+17.
+Success: Valid Query.
